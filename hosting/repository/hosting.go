@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"errors"
 	"sync"
+
+	"github.com/pkg/errors"
 
 	service "github.com/theskyinflames/cdmon2/hosting"
 	"github.com/theskyinflames/cdmon2/hosting/config"
@@ -30,7 +31,7 @@ func NewHostingReposytoryMap(cfg *config.Config) *HostingRepostitoryMap {
 func (h HostingRepostitoryMap) Get(uuid domain.UUID) (*domain.Hosting, error) {
 	hosting, exist := h.store[uuid]
 	if !exist {
-		return nil, service.DbErrorNotFound(errors.New("the hosting doesn't exist"))
+		return nil, errors.Wrapf(service.DbErrorNotFound, "uuid: %s", string(uuid))
 	}
 	return hosting, nil
 }
@@ -48,11 +49,11 @@ func (h HostingRepostitoryMap) GetAll() ([]domain.Hosting, error) {
 func (h HostingRepostitoryMap) Insert(hosting *domain.Hosting) error {
 	_, exist := h.store[hosting.UUID]
 	if exist {
-		return service.DbErrorAlreadyExist(errors.New("the hosting already exist with this uuid"))
+		return errors.Wrapf(service.DbErrorAlreadyExist, "uuid: %s", string(hosting.UUID))
 	}
 	_, exist = h.idxByName[hosting.Name]
 	if exist {
-		return service.DbErrorAlreadyExist(errors.New("the hosting already exist with this name"))
+		return errors.Wrapf(service.DbErrorAlreadyExist, "name: %s", hosting.Name)
 	}
 
 	err := hosting.Validate(h.cfg)
@@ -68,13 +69,13 @@ func (h HostingRepostitoryMap) Insert(hosting *domain.Hosting) error {
 func (h HostingRepostitoryMap) Update(hosting *domain.Hosting) error {
 	old, exist := h.store[hosting.UUID]
 	if !exist {
-		return service.DbErrorNotFound(errors.New("the hosting doesn't exist"))
+		return errors.Wrapf(service.DbErrorNotFound, "uuid: %s", string(hosting.UUID))
 	}
 
 	if old.Name != hosting.Name {
 		_, exist = h.idxByName[hosting.Name]
 		if exist {
-			return service.DbErrorAlreadyExist(errors.New("the hosting already exist with this name"))
+			return errors.Wrapf(service.DbErrorAlreadyExist, "name: %s", string(hosting.Name))
 		}
 	}
 
@@ -91,7 +92,7 @@ func (h HostingRepostitoryMap) Update(hosting *domain.Hosting) error {
 func (h HostingRepostitoryMap) Remove(uuid domain.UUID) (*domain.Hosting, error) {
 	hosting, exist := h.store[uuid]
 	if !exist {
-		return nil, service.DbErrorNotFound(errors.New("the hosting doesn't exist"))
+		return nil, errors.Wrapf(service.DbErrorNotFound, "uuid: %s", string(uuid))
 	}
 	delete(h.store, uuid)
 	delete(h.idxByName, hosting.Name)

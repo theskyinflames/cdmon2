@@ -94,7 +94,7 @@ func (c *Controller) CreateHosting(w http.ResponseWriter, r *http.Request) {
 	uuid, err := c.serverService.CreateHosting(rq.Name, rq.Cores, rq.MemoryMb, rq.DiskMb)
 	if err != nil {
 		rs = CreateHostingRs{ErrMsg: err.Error()}
-		switch errors.Cause(err).(type) {
+		switch errors.Cause(err) {
 		case service.DbErrorAlreadyExist:
 			respondWithJson(w, http.StatusConflict, &rs)
 		default:
@@ -135,7 +135,7 @@ func (c *Controller) RemoveHosting(w http.ResponseWriter, r *http.Request) {
 	err := c.serverService.RemoveHosting(domain.UUID(uuid))
 	if err != nil {
 		rs = RemoveHostingRs{ErrMsg: err.Error()}
-		switch errors.Cause(err).(type) {
+		switch errors.Cause(err) {
 		case service.DbErrorNotFound:
 			respondWithJson(w, http.StatusNotFound, &rs)
 		default:
@@ -163,7 +163,7 @@ func (c *Controller) UpdateHosting(w http.ResponseWriter, r *http.Request) {
 	err = c.serverService.UpdateHosting(&rq.Hosting)
 	if err != nil {
 		rs = UpdateHostingRs{ErrMsg: err.Error()}
-		switch errors.Cause(err).(type) {
+		switch errors.Cause(err) {
 		case service.DbErrorNotFound:
 			respondWithJson(w, http.StatusNotFound, &rs)
 		default:
