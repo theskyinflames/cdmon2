@@ -5,9 +5,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	service "github.com/theskyinflames/cdmon2/hosting"
-	"github.com/theskyinflames/cdmon2/hosting/config"
-	"github.com/theskyinflames/cdmon2/hosting/domain"
+	service "github.com/theskyinflames/cdmon2/app"
+	"github.com/theskyinflames/cdmon2/app/config"
+	"github.com/theskyinflames/cdmon2/app/domain"
 )
 
 type (

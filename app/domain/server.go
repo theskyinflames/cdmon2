@@ -5,7 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	gouuid "github.com/satori/go.uuid"
-	"github.com/theskyinflames/cdmon2/hosting/config"
+	"github.com/theskyinflames/cdmon2/app/config"
 )
 
 type (

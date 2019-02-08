@@ -6,11 +6,11 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 
-	"github.com/theskyinflames/cdmon2/hosting/api"
-	"github.com/theskyinflames/cdmon2/hosting/application"
-	"github.com/theskyinflames/cdmon2/hosting/config"
-	"github.com/theskyinflames/cdmon2/hosting/domain"
-	"github.com/theskyinflames/cdmon2/hosting/repository"
+	"github.com/theskyinflames/cdmon2/app/api"
+	"github.com/theskyinflames/cdmon2/app/config"
+	"github.com/theskyinflames/cdmon2/app/domain"
+	"github.com/theskyinflames/cdmon2/app/repository"
+	"github.com/theskyinflames/cdmon2/app/service"
 )
 
 func main() {
@@ -40,7 +40,7 @@ func main() {
 	hostingsRepository := repository.NewHostingReposytoryMap(cfg)
 
 	// Init the hostings server service
-	service := application.NewServer(hostingsRepository, serverDomain, cfg, log)
+	service := service.NewServer(hostingsRepository, serverDomain, cfg, log)
 
 	// Init the controller
 	controller := api.NewController(service, log)

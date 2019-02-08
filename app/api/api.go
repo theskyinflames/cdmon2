@@ -5,7 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
-	"github.com/theskyinflames/cdmon2/hosting/config"
+	"github.com/theskyinflames/cdmon2/app/config"
 )
 
 type (

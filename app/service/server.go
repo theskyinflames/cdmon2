@@ -1,12 +1,12 @@
-package application
+package service
 
 import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/theskyinflames/cdmon2/hosting/config"
-	"github.com/theskyinflames/cdmon2/hosting/domain"
+	"github.com/theskyinflames/cdmon2/app/config"
+	"github.com/theskyinflames/cdmon2/app/domain"
 )
 
 type (

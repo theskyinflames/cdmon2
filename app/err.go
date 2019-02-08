@@ -1,4 +1,4 @@
-package hosting
+package app
 
 import "errors"
 

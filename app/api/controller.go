@@ -9,9 +9,9 @@ import (
 	"github.com/hako/durafmt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	service "github.com/theskyinflames/cdmon2/hosting"
+	"github.com/theskyinflames/cdmon2/app"
 
-	"github.com/theskyinflames/cdmon2/hosting/domain"
+	"github.com/theskyinflames/cdmon2/app/domain"
 )
 
 type (
@@ -95,7 +95,7 @@ func (c *Controller) CreateHosting(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rs = CreateHostingRs{ErrMsg: err.Error()}
 		switch errors.Cause(err) {
-		case service.DbErrorAlreadyExist:
+		case app.DbErrorAlreadyExist:
 			respondWithJson(w, http.StatusConflict, &rs)
 		default:
 			respondWithJson(w, http.StatusInternalServerError, &rs)
@@ -136,7 +136,7 @@ func (c *Controller) RemoveHosting(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rs = RemoveHostingRs{ErrMsg: err.Error()}
 		switch errors.Cause(err) {
-		case service.DbErrorNotFound:
+		case app.DbErrorNotFound:
 			respondWithJson(w, http.StatusNotFound, &rs)
 		default:
 			respondWithJson(w, http.StatusInternalServerError, &rs)
@@ -164,7 +164,7 @@ func (c *Controller) UpdateHosting(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rs = UpdateHostingRs{ErrMsg: err.Error()}
 		switch errors.Cause(err) {
-		case service.DbErrorNotFound:
+		case app.DbErrorNotFound:
 			respondWithJson(w, http.StatusNotFound, &rs)
 		default:
 			respondWithJson(w, http.StatusInternalServerError, &rs)
