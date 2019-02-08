@@ -19,7 +19,7 @@ type (
 	}
 
 	ServerDomain interface {
-		CreateHosting(hosting *domain.Hosting, cfg *config.Config) error
+		AddHosting(hosting *domain.Hosting, cfg *config.Config) error
 		UpdateHosting(hosting, old *domain.Hosting, cfg *config.Config) error
 		RemoveHosting(hosting *domain.Hosting) error
 	}
@@ -52,7 +52,7 @@ func (s *ServerService) CreateHosting(name string, cores int, memorymb int, disk
 	s.Lock()
 	defer s.Unlock()
 
-	err = s.serverDomain.CreateHosting(hosting, s.cfg)
+	err = s.serverDomain.AddHosting(hosting, s.cfg)
 	if err != nil {
 		return domain.UUID(""), err
 	}

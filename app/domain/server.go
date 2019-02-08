@@ -37,7 +37,7 @@ func NewServer(cfg *config.Config) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) CreateHosting(hosting *Hosting, cfg *config.Config) error {
+func (s *Server) AddHosting(hosting *Hosting, cfg *config.Config) error {
 	err := s.checkForResourcesAvailability(hosting)
 	if err != nil {
 		return errors.Wrap(err, "there aren't resources enough to create the hosting")
