@@ -6,6 +6,7 @@ GOBIN ?= $(HOME)/bin
 VERSION = $(shell git describe --tags --always --dirty)
 BRANCH = $(shell git rev-parse --abbrev-ref HEAD)
 
+DOCKER_IMAGE = cdmon2
 
 all: help
 
@@ -17,11 +18,14 @@ help:
 	@echo "usage: make <command>"
 	@echo
 	@echo "commands:"
-	@echo "    mod       - populate vendor/ without updating it first"
-	@echo "    build     - build apps and installs them in $(GOBIN)"
-	@echo "    test      - run unit tests"
-	@echo "    coverage  - run unit tests and show coaverage on browser"
-	@echo "    clean     - remove generated files and directories"
+	@echo "    mod       	- populate vendor/ without updating it first"
+	@echo "    build     	- build apps and installs them in $(GOBIN)"
+	@echo "    test      	- run unit tests"
+	@echo "    coverage  	- run unit tests and show coaverage on browser"
+	@echo "    clean     	- remove generated files and directories"
+	@echo "    run       	- start the service locally"
+	@echo "    docker-build - build the docker image"
+	@echo "    docker-run 	- use docker-compose to run the service docker image"
 	@echo
 	@echo "GOPATH: $(GOPATH)"
 	@echo "GOBIN: $(GOBIN)"
@@ -49,7 +53,17 @@ clean:
 	go clean -i -r -cache -testcache
 	@echo
 
-run:setenv.sh 
+run:setenv.sh
 	@echo ">>> Running ..."
 	go run main.go
+	@echo
+
+docker-build:
+	@echo ">>> Docker image building ..."
+	docker build -t $(DOCKER_IMAGE) .
+	@echo
+
+docker-run:
+	@echo ">>> Running Docker image ..."
+	docker-compose up $(DOCKER_IMAGE)
 	@echo
