@@ -82,6 +82,7 @@ func (s *ServerService) RemoveHosting(uuid domain.UUID) error {
 
 	err = s.serverDomain.RemoveHosting(hosting)
 	if err != nil {
+		s.hostingRepository.Insert(hosting)
 		return err
 	}
 
@@ -103,8 +104,13 @@ func (s *ServerService) UpdateHosting(hosting *domain.Hosting) error {
 		return err
 	}
 
+	err = s.hostingRepository.Update(hosting)
+	if err != nil {
+		return err
+	}
+
 	s.log.WithFields(logrus.Fields{"uuid": string(hosting.UUID)}).Info("updated hosting")
-	return s.hostingRepository.Update(hosting)
+	return nil
 }
 
 func (s *ServerService) GetServerStatus() *domain.Server {
