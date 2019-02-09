@@ -9,8 +9,8 @@ import (
 	"github.com/hako/durafmt"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/theskyinflames/cdmon2/app"
 
+	"github.com/theskyinflames/cdmon2/app"
 	"github.com/theskyinflames/cdmon2/app/domain"
 )
 
@@ -63,6 +63,7 @@ type (
 
 func NewController(serverService ServerService, log *logrus.Logger) *Controller {
 	return &Controller{
+		log:           log,
 		serverService: serverService,
 		startTime:     time.Now(),
 	}
@@ -76,7 +77,7 @@ func (c *Controller) Health(w http.ResponseWriter, r *http.Request) {
 	runningTime := time.Now().Sub(c.startTime)
 	serverStatus := c.serverService.GetServerStatus()
 	rs = HealthRs{RunningTime: durafmt.Parse(runningTime).String(), ServerStatus: serverStatus}
-	respondWithJson(w, http.StatusOK, &rs)
+	c.respondWithJson(w, http.StatusOK, &rs, r.Method)
 }
 
 func (c *Controller) CreateHosting(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +88,7 @@ func (c *Controller) CreateHosting(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&rq)
 	if err != nil {
-		respondWithJson(w, http.StatusBadRequest, err.Error())
+		c.respondWithJson(w, http.StatusBadRequest, err.Error(), r.Method)
 		return
 	}
 
@@ -96,14 +97,15 @@ func (c *Controller) CreateHosting(w http.ResponseWriter, r *http.Request) {
 		rs = CreateHostingRs{ErrMsg: err.Error()}
 		switch errors.Cause(err) {
 		case app.DbErrorAlreadyExist:
-			respondWithJson(w, http.StatusConflict, &rs)
+			c.respondWithJson(w, http.StatusConflict, &rs, r.Method)
 		default:
-			respondWithJson(w, http.StatusInternalServerError, &rs)
+			c.respondWithJson(w, http.StatusInternalServerError, &rs, r.Method)
 		}
+		return
 	}
 
 	rs = CreateHostingRs{UUID: string(uuid)}
-	respondWithJson(w, http.StatusOK, &rs)
+	c.respondWithJson(w, http.StatusOK, &rs, r.Method)
 }
 
 func (c *Controller) GetHostings(w http.ResponseWriter, r *http.Request) {
@@ -114,15 +116,15 @@ func (c *Controller) GetHostings(w http.ResponseWriter, r *http.Request) {
 	hostings, err := c.serverService.GetHostings()
 	if err != nil {
 		rs = GetHostingsRs{ErrMsg: err.Error()}
-		respondWithJson(w, http.StatusInternalServerError, &rs)
+		c.respondWithJson(w, http.StatusInternalServerError, &rs, r.Method)
 		return
 	}
 
 	rs = GetHostingsRs{Hostings: hostings}
 	if len(hostings) > 0 {
-		respondWithJson(w, http.StatusFound, &rs)
+		c.respondWithJson(w, http.StatusFound, &rs, r.Method)
 	} else {
-		respondWithJson(w, http.StatusOK, &rs)
+		c.respondWithJson(w, http.StatusOK, &rs, r.Method)
 	}
 }
 
@@ -137,15 +139,15 @@ func (c *Controller) RemoveHosting(w http.ResponseWriter, r *http.Request) {
 		rs = RemoveHostingRs{ErrMsg: err.Error()}
 		switch errors.Cause(err) {
 		case app.DbErrorNotFound:
-			respondWithJson(w, http.StatusNotFound, &rs)
+			c.respondWithJson(w, http.StatusNotFound, &rs, r.Method)
 		default:
-			respondWithJson(w, http.StatusInternalServerError, &rs)
+			c.respondWithJson(w, http.StatusInternalServerError, &rs, r.Method)
 		}
 		return
 	}
 
 	rs = RemoveHostingRs{UUID: uuid}
-	respondWithJson(w, http.StatusOK, rs)
+	c.respondWithJson(w, http.StatusOK, rs, r.Method)
 }
 
 func (c *Controller) UpdateHosting(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +158,7 @@ func (c *Controller) UpdateHosting(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&rq)
 	if err != nil {
-		respondWithJson(w, http.StatusBadRequest, err.Error())
+		c.respondWithJson(w, http.StatusBadRequest, err.Error(), r.Method)
 		return
 	}
 
@@ -165,20 +167,27 @@ func (c *Controller) UpdateHosting(w http.ResponseWriter, r *http.Request) {
 		rs = UpdateHostingRs{ErrMsg: err.Error()}
 		switch errors.Cause(err) {
 		case app.DbErrorNotFound:
-			respondWithJson(w, http.StatusNotFound, &rs)
+			c.respondWithJson(w, http.StatusNotFound, &rs, r.Method)
 		default:
-			respondWithJson(w, http.StatusInternalServerError, &rs)
+			c.respondWithJson(w, http.StatusInternalServerError, &rs, r.Method)
 		}
 		return
 	}
 
 	rs = UpdateHostingRs{UUID: string(rq.UUID)}
-	respondWithJson(w, http.StatusOK, &rs)
-
+	c.respondWithJson(w, http.StatusOK, &rs, r.Method)
 }
 
-func respondWithJson(w http.ResponseWriter, code int, payload interface{}) {
+func (c *Controller) respondWithJson(w http.ResponseWriter, code int, payload interface{}, action string) {
 	response, _ := json.Marshal(payload)
+
+	if code != http.StatusOK && code != http.StatusFound && response != nil {
+		c.log.WithFields(logrus.Fields{
+			"action":      action,
+			"http_status": code,
+		}).Error(string(response))
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)

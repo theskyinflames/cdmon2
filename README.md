@@ -111,6 +111,9 @@ To code this exercise, I've stablished these rules:
 * There is a Server domain wich acts a hostings container. It would also could be taken as an aggregate root. However, I've maintained the two domains (Server, Hosting) as separate domains to make the code simpler. Basically, I use Server domain as a resources container. These resources are cores, memory and disk. Every time that a hosting is created, removed or updated, the server domain update its resources availability. It also ensures that a creation or update operation will not exceed the server resources availability.
 * I've assigned an UUID to each entity. In the case of Hosting entity, this new field  has replaced the ID field.
 * The hosting attribute "Name" must be unique.
+* The hostings are serialized in a binary way to be persisted into Redis. I've done it like that because it has better performance than json serialization
+* A feature that would improve the performance of the service in a high concurrency scenery, it would be to implement **CQRS pattern**. I've not implemented here because I haven't had time enough. Also It could be implemented at systems infrastructure level, by using a Redis cluster and different services instances to read and write operations
+* Another improvement opportunity is to persist the server state instead of initialize at start up. In that way, several concurrent instances of the server would see the same resources server
 
 
 ## Infrastructure
@@ -132,9 +135,12 @@ There are these packages:
 * **app/config**: Configuration values
 * **app/api**: REST API publising and routing. It depends on *app/service* package.
 * **app/service**: Application service. This package provides the needed service logic to resolve the api requests. To do this , it depends on the *app/domain* and *app/repository* packages.
-* **app/domain**: Domains of the bounded context for this service. In this case, Server and Hosting. Each of these domains provides its domain logic, for example to validate it self, or, in the case of the server, to avoid resources overflow.
-* **app/repository**: This package provides a persistence layer abstraction. It depends on *app/store* package
-* **app/store**: Persistence layer implementation. In this case, it's a Redis instance
+* **app/domain**: Domains of the bounded context for this service. In this case, Server and Hosting. Each of these domains provides its domain logic, for example to validate themselves, or, in the case of the server, to avoid resources overflowing.
+* **app/repository**: This package provides a persistence layer abstraction. It depends on *app/store* package.
+* **app/store**: Persistence layer implementation. In this case, it's a Redis instance.
+
+Almost all packages includes unit tests. I've implemented it where it makes sense. Basically where the coded logic has a minimum of complexity
+
 
 ## Launch the unit tests
 To launch the unit tests, you must do:
@@ -150,7 +156,7 @@ make help
 
 The easiest way to start the the service is as a Docker container. Firstly it's necessary build the container:
 ```sh
-make docker-built
+make docker-build
 ```
 When it finishes, the service container can be started:
 ```
@@ -168,7 +174,7 @@ cdmon2_1  | time="2019-02-09T17:45:57Z" level=info msg="starting hosting service
 ```
 
 ## Start the service without Docker
-You also can start the service without Docker. To do this you'll need to have an accessible and running Redis instance. In addition, you'll have to ensure that the environment variables are correctly informed in the file *setenv.sh*. These are the default values, in the ![setenv.sh](./setenv.sh) file
+You also can start the service without Docker. To do this you'll need to have an accessible and running Redis instance. In addition, you'll have to ensure that the environment variables are correctly informed in the file *setenv.sh*. These are the default values,
 ```
 #!/bin/bash
 

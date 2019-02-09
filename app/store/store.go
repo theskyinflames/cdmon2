@@ -7,6 +7,7 @@ import (
 
 	"github.com/theskyinflames/cdmon2/app"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/theskyinflames/cdmon2/app/config"
 	"github.com/theskyinflames/cdmon2/app/domain"
@@ -100,7 +101,7 @@ func (s *Store) Get(key string, item interface{}) (interface{}, error) {
 	res := s.conn.Get(key)
 	err := res.Err()
 	if err != nil {
-		switch err {
+		switch errors.Cause(err) {
 		case redis.Nil:
 			return nil, app.DbErrorNotFound
 		default:
@@ -125,7 +126,7 @@ func (s *Store) GetAll(pattern string, emptyRecordFunc config.EmptyRecordFunc) (
 	}
 
 	var keys []string = res.Val()
-	s.log.Infof("retrieved %d hostings to GetAll() \n", len(keys))
+	s.log.Infof("retrieved %d hostings to GetAll()", len(keys))
 	slice := make([]interface{}, len(keys))
 	for z, k := range keys {
 		item, err := s.Get(k, emptyRecordFunc())

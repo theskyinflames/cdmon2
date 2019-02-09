@@ -43,7 +43,7 @@ func (h HostingRepostitoryMap) Get(uuid domain.UUID) (*domain.Hosting, error) {
 
 	item, err = h.store.Get(string(uuid), &domain.Hosting{})
 	if err != nil {
-		switch err {
+		switch errors.Cause(err) {
 		case app.DbErrorNotFound:
 			return nil, errors.Wrapf(err, "uuid: %s", string(uuid))
 		default:
@@ -70,8 +70,9 @@ func (h HostingRepostitoryMap) GetAll() ([]domain.Hosting, error) {
 }
 
 func (h HostingRepostitoryMap) Insert(hosting *domain.Hosting) error {
+	// Check if already exists an hosting with the same UUID
 	_, err := h.store.Get(string(hosting.UUID), hosting)
-	switch err {
+	switch errors.Cause(err) {
 	case nil:
 		return errors.Wrapf(app.DbErrorAlreadyExist, "uuid: %s", string(hosting.UUID))
 	case app.DbErrorNotFound:
@@ -79,9 +80,10 @@ func (h HostingRepostitoryMap) Insert(hosting *domain.Hosting) error {
 		return err
 	}
 
+	// Check if already exists an hosting with the same name
 	var s string
 	_, err = h.store.Get(hosting.Name, &s)
-	switch err {
+	switch errors.Cause(err) {
 	case nil:
 		return errors.Wrapf(app.DbErrorAlreadyExist, "name: %s", hosting.Name)
 	case app.DbErrorNotFound:
@@ -94,6 +96,7 @@ func (h HostingRepostitoryMap) Insert(hosting *domain.Hosting) error {
 		return err
 	}
 
+	// Persist the new hosting
 	h.store.Set(string(hosting.UUID), *hosting)
 	h.store.Set(hosting.Name, "0")
 	return nil
@@ -108,7 +111,7 @@ func (h HostingRepostitoryMap) Update(hosting *domain.Hosting) error {
 		// Check for a already existing name
 		var s string
 		_, err = h.store.Get(hosting.Name, &s)
-		switch err {
+		switch errors.Cause(err) {
 		case nil:
 			return errors.Wrapf(app.DbErrorAlreadyExist, "name: %s", hosting.Name)
 		case app.DbErrorNotFound:
@@ -121,6 +124,7 @@ func (h HostingRepostitoryMap) Update(hosting *domain.Hosting) error {
 		return err
 	}
 
+	// Persist the new hosting status
 	h.store.Set(string(hosting.UUID), *hosting)
 	h.store.Set(hosting.Name, "0")
 	return nil

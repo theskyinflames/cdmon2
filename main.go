@@ -20,11 +20,11 @@ func main() {
 	// Set logging service
 	logrus.SetFormatter(&logrus.JSONFormatter{})
 	logrus.SetOutput(os.Stdout)
-	logrus.SetLevel(logrus.WarnLevel)
+	logrus.SetLevel(logrus.InfoLevel)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
+		ForceColors:   true,
 	})
-	logrus.SetLevel(logrus.InfoLevel)
 	log := logrus.New()
 
 	// Sever config loading
@@ -44,6 +44,7 @@ func main() {
 		panic(err)
 	}
 	store.Flush() // Empty for each execution.
+	defer store.Close()
 	hostingsRepository := repository.NewHostingReposytoryMap(cfg, store)
 
 	// Init the hostings server service

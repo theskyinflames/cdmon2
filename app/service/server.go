@@ -53,11 +53,13 @@ func (s *ServerService) CreateHosting(name string, cores int, memorymb int, disk
 	s.Lock()
 	defer s.Unlock()
 
+	// Take server resources
 	err = s.serverDomain.AddHosting(hosting, s.cfg)
 	if err != nil {
 		return domain.UUID(""), err
 	}
 
+	// Persist the new hosting
 	err = s.hostingRepository.Insert(hosting)
 	if err != nil {
 		s.serverDomain.RemoveHosting(hosting)
@@ -76,11 +78,13 @@ func (s *ServerService) RemoveHosting(uuid domain.UUID) error {
 	s.Lock()
 	defer s.Unlock()
 
+	// Remove the hosting from persistence layer
 	hosting, err := s.hostingRepository.Remove(uuid)
 	if err != nil {
 		return err
 	}
 
+	// Release hosting resources in the server
 	err = s.serverDomain.RemoveHosting(hosting)
 	if err != nil {
 		s.hostingRepository.Insert(hosting)
@@ -95,16 +99,19 @@ func (s *ServerService) UpdateHosting(hosting *domain.Hosting) error {
 	s.Lock()
 	defer s.Unlock()
 
+	// Getting the current version
 	old, err := s.hostingRepository.Get(hosting.UUID)
 	if err != nil {
 		return err
 	}
 
+	// Recalculate server resources availability
 	err = s.serverDomain.UpdateHosting(hosting, old, s.cfg)
 	if err != nil {
 		return err
 	}
 
+	// Persist the new hosting status
 	err = s.hostingRepository.Update(hosting)
 	if err != nil {
 		return err
