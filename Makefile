@@ -1,5 +1,3 @@
-include ./setenv.sh
-
 GOPATH ?= $(HOME)/go
 GOBIN ?= $(HOME)/bin
 
@@ -53,7 +51,7 @@ clean:
 	go clean -i -r -cache -testcache
 	@echo
 
-run:setenv.sh
+run:
 	@echo ">>> Running ..."
 	go run main.go
 	@echo

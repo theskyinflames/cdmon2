@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"github.com/theskyinflames/cdmon2/app"
 	service "github.com/theskyinflames/cdmon2/app"
 	"github.com/theskyinflames/cdmon2/app/config"
 	"github.com/theskyinflames/cdmon2/app/domain"
@@ -21,21 +22,6 @@ func (a ByUUID) Len() int           { return len(a) }
 func (a ByUUID) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByUUID) Less(i, j int) bool { return a[i].UUID < a[j].UUID }
 
-func populateFixturesByUUID() map[domain.UUID]*domain.Hosting {
-	return map[domain.UUID]*domain.Hosting{
-		domain.UUID("uuid1"): &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1},
-		domain.UUID("uuid2"): &domain.Hosting{UUID: "uuid2", Name: "h2", Cores: 1, MemoryMb: 1, DiskMb: 1},
-		domain.UUID("uuid3"): &domain.Hosting{UUID: "uuid3", Name: "h3", Cores: 1, MemoryMb: 1, DiskMb: 1},
-	}
-}
-func populateFixturesByName() map[string]*domain.Hosting {
-	return map[string]*domain.Hosting{
-		"h1": &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1},
-		"h2": &domain.Hosting{UUID: "uuid2", Name: "h2", Cores: 1, MemoryMb: 1, DiskMb: 1},
-		"h3": &domain.Hosting{UUID: "uuid3", Name: "h3", Cores: 1, MemoryMb: 1, DiskMb: 1},
-	}
-}
-
 func populateConfig() *config.Config {
 	return &config.Config{
 		MinimalNumberOfCores:  1,
@@ -46,11 +32,9 @@ func populateConfig() *config.Config {
 
 func TestHostingRepostitoryMap_Get(t *testing.T) {
 
-	fixtures := populateFixturesByUUID()
-
 	type fields struct {
 		Mutex sync.Mutex
-		store map[domain.UUID]*domain.Hosting
+		store *StoreMock
 	}
 	type args struct {
 		uuid domain.UUID
@@ -65,16 +49,24 @@ func TestHostingRepostitoryMap_Get(t *testing.T) {
 		{
 			name: "given repository, when an existing hosting is required, then it's returned",
 			fields: fields{
-				store: fixtures,
+				store: &StoreMock{
+					GetFunc: func(key string, item interface{}) (interface{}, error) {
+						return &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1}, nil
+					},
+				},
 			},
 			args:    args{uuid: "uuid1"},
-			want:    fixtures[domain.UUID("uuid1")],
+			want:    &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1},
 			wantErr: false,
 		},
 		{
 			name: "given repository, when a not existing hosting is required, then it fails",
 			fields: fields{
-				store: fixtures,
+				store: &StoreMock{
+					GetFunc: func(key string, item interface{}) (interface{}, error) {
+						return nil, app.DbErrorNotFound
+					},
+				},
 			},
 			args:    args{uuid: "uuid111"},
 			want:    nil,
@@ -101,17 +93,14 @@ func TestHostingRepostitoryMap_Get(t *testing.T) {
 
 func TestHostingRepostitoryMap_GetAll(t *testing.T) {
 
-	fixtures := populateFixturesByUUID()
-
-	sliceOfhostings := make([]domain.Hosting, len(fixtures))
-	z := 0
-	for _, v := range fixtures {
-		sliceOfhostings[z] = *v
-		z++
+	sliceOfhostings := []domain.Hosting{
+		domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1},
+		domain.Hosting{UUID: "uuid2", Name: "h2", Cores: 1, MemoryMb: 1, DiskMb: 1},
+		domain.Hosting{UUID: "uuid3", Name: "h3", Cores: 1, MemoryMb: 1, DiskMb: 1},
 	}
 
 	type fields struct {
-		store map[domain.UUID]*domain.Hosting
+		store *StoreMock
 	}
 	tests := []struct {
 		name    string
@@ -122,7 +111,15 @@ func TestHostingRepostitoryMap_GetAll(t *testing.T) {
 		{
 			name: "given a repository, when the list of hostins is required, then it's returned",
 			fields: fields{
-				store: fixtures,
+				store: &StoreMock{
+					GetAllFunc: func(pattern string, emptyRecordFunc config.EmptyRecordFunc) ([]interface{}, error) {
+						return []interface{}{
+							&domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1},
+							&domain.Hosting{UUID: "uuid2", Name: "h2", Cores: 1, MemoryMb: 1, DiskMb: 1},
+							&domain.Hosting{UUID: "uuid3", Name: "h3", Cores: 1, MemoryMb: 1, DiskMb: 1},
+						}, nil
+					},
+				},
 			},
 			want:    sliceOfhostings,
 			wantErr: false,
@@ -154,17 +151,11 @@ func TestHostingRepostitoryMap_GetAll(t *testing.T) {
 func TestHostingRepostitoryMap_Insert(t *testing.T) {
 
 	cfg := populateConfig()
-	fixtures := populateFixturesByUUID()
-	fixturesByName := populateFixturesByName()
-	newHosting := &domain.Hosting{UUID: "uuid33", Name: "h33", Cores: 1, MemoryMb: 1, DiskMb: 1}
-	alreadyExistingUUID := &domain.Hosting{UUID: "uuid1", Name: "h134", Cores: 1, MemoryMb: 1, DiskMb: 1}
-	alreadyExistingName := &domain.Hosting{UUID: "uuid44", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1}
 
 	type fields struct {
-		Mutex     sync.Mutex
-		cfg       *config.Config
-		store     map[domain.UUID]*domain.Hosting
-		idxByName map[string]*domain.Hosting
+		Mutex sync.Mutex
+		cfg   *config.Config
+		store *StoreMock
 	}
 	type args struct {
 		hosting *domain.Hosting
@@ -178,39 +169,57 @@ func TestHostingRepostitoryMap_Insert(t *testing.T) {
 		{
 			name: "given a populated repository, when a new hosting is inserted then all works fine",
 			fields: fields{
-				Mutex:     sync.Mutex{},
-				cfg:       cfg,
-				store:     fixtures,
-				idxByName: fixturesByName,
+				Mutex: sync.Mutex{},
+				cfg:   cfg,
+				store: &StoreMock{
+					GetFunc: func(key string, item interface{}) (interface{}, error) {
+						return nil, app.DbErrorNotFound
+					},
+					SetFunc: func(key string, item interface{}) error {
+						return nil
+					},
+				},
 			},
 			args: args{
-				hosting: newHosting,
+				hosting: &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1},
 			},
 			wantErr: false,
 		},
 		{
 			name: "given a populated repository, when a hosting with a existing UUID is tried to be inserted, then if fails",
 			fields: fields{
-				Mutex:     sync.Mutex{},
-				cfg:       cfg,
-				store:     fixtures,
-				idxByName: fixturesByName,
+				Mutex: sync.Mutex{},
+				cfg:   cfg,
+				store: &StoreMock{
+					GetFunc: func(key string, item interface{}) (interface{}, error) {
+						return nil, app.DbErrorAlreadyExist
+					},
+					SetFunc: func(key string, item interface{}) error {
+						return nil
+					},
+				},
 			},
 			args: args{
-				hosting: alreadyExistingUUID,
+				hosting: &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1},
 			},
 			wantErr: true,
 		},
 		{
 			name: "given a populated repository, when a hosting with a existing Name is tried to be inserted, then if fails",
 			fields: fields{
-				Mutex:     sync.Mutex{},
-				cfg:       cfg,
-				store:     fixtures,
-				idxByName: fixturesByName,
+				Mutex: sync.Mutex{},
+				cfg:   cfg,
+				store: &StoreMock{
+					GetFunc: func(key string, item interface{}) (interface{}, error) {
+						return nil, app.DbErrorAlreadyExist
+					},
+					SetFunc: func(key string, item interface{}) error {
+						return nil
+					},
+				},
 			},
 			args: args{
-				hosting: alreadyExistingName,
+				hosting: &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1},
 			},
 			wantErr: true,
 		},
@@ -219,10 +228,9 @@ func TestHostingRepostitoryMap_Insert(t *testing.T) {
 		var err error
 		t.Run(tt.name, func(t *testing.T) {
 			h := HostingRepostitoryMap{
-				Mutex:     tt.fields.Mutex,
-				cfg:       tt.fields.cfg,
-				store:     tt.fields.store,
-				idxByName: tt.fields.idxByName,
+				Mutex: tt.fields.Mutex,
+				cfg:   tt.fields.cfg,
+				store: tt.fields.store,
 			}
 			if err = h.Insert(tt.args.hosting); (err != nil) != tt.wantErr {
 				t.Errorf("HostingRepostitoryMap.Insert() error = %v, wantErr %v", err, tt.wantErr)
@@ -241,20 +249,13 @@ func TestHostingRepostitoryMap_Insert(t *testing.T) {
 		})
 	}
 }
-
 func TestHostingRepostitoryMap_Update(t *testing.T) {
 	cfg := populateConfig()
-	fixtures := populateFixturesByUUID()
-	fixturesByName := populateFixturesByName()
-	updatedHosting := &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 22, MemoryMb: 1, DiskMb: 1}
-	notExistingUUID := &domain.Hosting{UUID: "uuid133", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1}
-	alreadyExistingName := &domain.Hosting{UUID: "uuid1", Name: "h2", Cores: 1, MemoryMb: 1, DiskMb: 1}
 
 	type fields struct {
-		Mutex     sync.Mutex
-		cfg       *config.Config
-		store     map[domain.UUID]*domain.Hosting
-		idxByName map[string]*domain.Hosting
+		Mutex sync.Mutex
+		cfg   *config.Config
+		store *StoreMock
 	}
 	type args struct {
 		hosting *domain.Hosting
@@ -268,39 +269,60 @@ func TestHostingRepostitoryMap_Update(t *testing.T) {
 		{
 			name: "given a populated repository, when a hosting is updated then all works fine",
 			fields: fields{
-				Mutex:     sync.Mutex{},
-				cfg:       cfg,
-				store:     fixtures,
-				idxByName: fixturesByName,
+				Mutex: sync.Mutex{},
+				cfg:   cfg,
+				store: &StoreMock{
+					GetFunc: func(key string, item interface{}) (interface{}, error) {
+						return &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 22, MemoryMb: 1, DiskMb: 1}, nil
+					},
+					SetFunc: func(key string, item interface{}) error {
+						return nil
+					},
+				},
 			},
 			args: args{
-				hosting: updatedHosting,
+				hosting: &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1},
 			},
 			wantErr: false,
 		},
 		{
 			name: "given a populated repository, when a hosting with a not existing UUID is tried to be updated, then if fails",
 			fields: fields{
-				Mutex:     sync.Mutex{},
-				cfg:       cfg,
-				store:     fixtures,
-				idxByName: fixturesByName,
+				Mutex: sync.Mutex{},
+				cfg:   cfg,
+				store: &StoreMock{
+					GetFunc: func(key string, item interface{}) (interface{}, error) {
+						return nil, app.DbErrorNotFound
+					},
+					SetFunc: func(key string, item interface{}) error {
+						return nil
+					},
+				},
 			},
 			args: args{
-				hosting: notExistingUUID,
+				hosting: &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1},
 			},
 			wantErr: true,
 		},
 		{
 			name: "given a populated repository, when a hosting with a existing Name is tried to be updated, then if fails",
 			fields: fields{
-				Mutex:     sync.Mutex{},
-				cfg:       cfg,
-				store:     fixtures,
-				idxByName: fixturesByName,
+				Mutex: sync.Mutex{},
+				cfg:   cfg,
+				store: &StoreMock{
+					GetFunc: func(key string, item interface{}) (interface{}, error) {
+						if key == "h2" {
+							return "0", nil
+						}
+						return &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1}, nil
+					},
+					SetFunc: func(key string, item interface{}) error {
+						return nil
+					},
+				},
 			},
 			args: args{
-				hosting: alreadyExistingName,
+				hosting: &domain.Hosting{UUID: "uuid1", Name: "h2", Cores: 1, MemoryMb: 1, DiskMb: 1},
 			},
 			wantErr: true,
 		},
@@ -309,10 +331,9 @@ func TestHostingRepostitoryMap_Update(t *testing.T) {
 		var err error
 		t.Run(tt.name, func(t *testing.T) {
 			h := HostingRepostitoryMap{
-				Mutex:     tt.fields.Mutex,
-				cfg:       tt.fields.cfg,
-				store:     tt.fields.store,
-				idxByName: tt.fields.idxByName,
+				Mutex: tt.fields.Mutex,
+				cfg:   tt.fields.cfg,
+				store: tt.fields.store,
 			}
 			if err = h.Update(tt.args.hosting); (err != nil) != tt.wantErr {
 				t.Errorf("HostingRepostitoryMap.Update() error = %v, wantErr %v", err, tt.wantErr)
@@ -320,7 +341,6 @@ func TestHostingRepostitoryMap_Update(t *testing.T) {
 
 			switch z {
 			case 0:
-				assert.Equal(t, 22, h.store[domain.UUID("uuid1")].Cores)
 			case 1:
 				switch errors.Cause(err) {
 				case service.DbErrorNotFound:
@@ -345,20 +365,11 @@ func TestHostingRepostitoryMap_Update(t *testing.T) {
 func TestHostingRepostitoryMap_Remove(t *testing.T) {
 
 	cfg := populateConfig()
-	fixtures := populateFixturesByUUID()
-	fixturesByName := populateFixturesByName()
-	removedHosting := &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 1, MemoryMb: 1, DiskMb: 1}
-	removedHostingUUID := domain.UUID("uuid1")
-	afterRemoveFixtures := populateFixturesByUUID()
-	delete(afterRemoveFixtures, domain.UUID("uuid1"))
-	afterRemoveFixturesByName := populateFixturesByName()
-	delete(afterRemoveFixturesByName, "h1")
 
 	type fields struct {
-		Mutex     sync.Mutex
-		cfg       *config.Config
-		store     map[domain.UUID]*domain.Hosting
-		idxByName map[string]*domain.Hosting
+		Mutex sync.Mutex
+		cfg   *config.Config
+		store *StoreMock
 	}
 	type args struct {
 		uuid domain.UUID
@@ -373,24 +384,36 @@ func TestHostingRepostitoryMap_Remove(t *testing.T) {
 		{
 			name: "given a populated repository, when a hosting is removed then all works fine",
 			fields: fields{
-				Mutex:     sync.Mutex{},
-				cfg:       cfg,
-				store:     fixtures,
-				idxByName: fixturesByName,
+				Mutex: sync.Mutex{},
+				cfg:   cfg,
+				store: &StoreMock{
+					GetFunc: func(key string, item interface{}) (interface{}, error) {
+						return &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 22, MemoryMb: 1, DiskMb: 1}, nil
+					},
+					RemoveFunc: func(key string) error {
+						return nil
+					},
+				},
 			},
 			args: args{
-				uuid: removedHostingUUID,
+				uuid: domain.UUID("uuid1"),
 			},
-			want:    removedHosting,
+			want:    &domain.Hosting{UUID: "uuid1", Name: "h1", Cores: 22, MemoryMb: 1, DiskMb: 1},
 			wantErr: false,
 		},
 		{
 			name: "given a populated repository, when a hosting with not existing UUID is tried to be removed, then it fails",
 			fields: fields{
-				Mutex:     sync.Mutex{},
-				cfg:       cfg,
-				store:     fixtures,
-				idxByName: fixturesByName,
+				Mutex: sync.Mutex{},
+				cfg:   cfg,
+				store: &StoreMock{
+					GetFunc: func(key string, item interface{}) (interface{}, error) {
+						return nil, app.DbErrorNotFound
+					},
+					RemoveFunc: func(key string) error {
+						return nil
+					},
+				},
 			},
 			args: args{
 				uuid: domain.UUID("uuid9999"),
@@ -406,10 +429,9 @@ func TestHostingRepostitoryMap_Remove(t *testing.T) {
 		)
 		t.Run(tt.name, func(t *testing.T) {
 			h := HostingRepostitoryMap{
-				Mutex:     tt.fields.Mutex,
-				cfg:       tt.fields.cfg,
-				store:     tt.fields.store,
-				idxByName: tt.fields.idxByName,
+				Mutex: tt.fields.Mutex,
+				cfg:   tt.fields.cfg,
+				store: tt.fields.store,
 			}
 			got, err = h.Remove(tt.args.uuid)
 			if (err != nil) != tt.wantErr {
@@ -421,13 +443,6 @@ func TestHostingRepostitoryMap_Remove(t *testing.T) {
 			}
 
 			switch z {
-			case 0:
-				if !reflect.DeepEqual(h.store, afterRemoveFixtures) {
-					t.Errorf("HostingRepostitoryMap.Remove() = %v, want %v", h.store, afterRemoveFixtures)
-				}
-				if !reflect.DeepEqual(h.idxByName, afterRemoveFixturesByName) {
-					t.Errorf("HostingRepostitoryMap.Remove() = %v, want %v", h.idxByName, afterRemoveFixturesByName)
-				}
 			case 1:
 				switch errors.Cause(err) {
 				case service.DbErrorAlreadyExist:

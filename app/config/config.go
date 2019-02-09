@@ -17,6 +17,8 @@ const (
 )
 
 type (
+	EmptyRecordFunc func() interface{}
+
 	Config struct {
 		APIPort               string
 		TotalNumberOfCores    int

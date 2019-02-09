@@ -31,7 +31,7 @@ func TestStorage_ItemToGob(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := &Storage{}
+			s := &Store{}
 			got, err := s.ItemToGob(tt.args.item)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Storage.ItemToGob() error = %v, wantErr %v", err, tt.wantErr)
@@ -46,7 +46,7 @@ func TestStorage_FromGobToItem(t *testing.T) {
 
 	item := Item{Name: "Bartolo", Age: 22}
 
-	s := &Storage{}
+	s := &Store{}
 	bin, err := s.ItemToGob(item)
 	if err != nil {
 		t.Fail()

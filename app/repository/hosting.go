@@ -8,7 +8,6 @@ import (
 	"github.com/theskyinflames/cdmon2/app"
 	"github.com/theskyinflames/cdmon2/app/config"
 	"github.com/theskyinflames/cdmon2/app/domain"
-	"github.com/theskyinflames/cdmon2/app/store"
 )
 
 type (
@@ -16,7 +15,7 @@ type (
 		Connect() error
 		Close() error
 		Get(key string, item interface{}) (interface{}, error)
-		GetAll(pattern string, emptyRecordFunc store.EmptyRecordFunc) ([]interface{}, error)
+		GetAll(pattern string, emptyRecordFunc config.EmptyRecordFunc) ([]interface{}, error)
 		Set(key string, item interface{}) error
 		Remove(key string) error
 	}
@@ -56,7 +55,7 @@ func (h HostingRepostitoryMap) Get(uuid domain.UUID) (*domain.Hosting, error) {
 
 func (h HostingRepostitoryMap) GetAll() ([]domain.Hosting, error) {
 
-	var emptyRecordFunc store.EmptyRecordFunc = func() interface{} {
+	var emptyRecordFunc config.EmptyRecordFunc = func() interface{} {
 		return &domain.Hosting{}
 	}
 	slice, err := h.store.GetAll("*-*", emptyRecordFunc)

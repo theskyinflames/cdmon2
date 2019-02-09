@@ -20,8 +20,6 @@ func init() {
 }
 
 type (
-	EmptyRecordFunc func() interface{}
-
 	Store struct {
 		log  *logrus.Logger
 		cfg  *config.Config
@@ -74,6 +72,8 @@ func (_ *Store) FromGobToItem(b []byte, item interface{}) (interface{}, error) {
 }
 
 func (s *Store) Connect() error {
+
+	s.log.Infof("redis connection at %s", s.cfg.RedisAddr)
 	s.conn = redis.NewClient(&redis.Options{
 		Addr:     s.cfg.RedisAddr,
 		Password: "", // no password set
@@ -115,7 +115,7 @@ func (s *Store) Get(key string, item interface{}) (interface{}, error) {
 	return s.FromGobToItem([]byte(bin), item)
 }
 
-func (s *Store) GetAll(pattern string, emptyRecordFunc EmptyRecordFunc) ([]interface{}, error) {
+func (s *Store) GetAll(pattern string, emptyRecordFunc config.EmptyRecordFunc) ([]interface{}, error) {
 	if len(pattern) == 0 {
 		pattern = "*"
 	}
@@ -125,7 +125,7 @@ func (s *Store) GetAll(pattern string, emptyRecordFunc EmptyRecordFunc) ([]inter
 	}
 
 	var keys []string = res.Val()
-	s.log.Info("retrieved %d hostings to GetAll() \n", len(keys))
+	s.log.Infof("retrieved %d hostings to GetAll() \n", len(keys))
 	slice := make([]interface{}, len(keys))
 	for z, k := range keys {
 		item, err := s.Get(k, emptyRecordFunc())
