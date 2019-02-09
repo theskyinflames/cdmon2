@@ -21,7 +21,7 @@ help:
 	@echo "    test      	- run unit tests"
 	@echo "    coverage  	- run unit tests and show coaverage on browser"
 	@echo "    clean     	- remove generated files and directories"
-	@echo "    run       	- start the service locally"
+	@echo "    run       	- start the service locally, NOT AS A DOCKER CONAINER"
 	@echo "    docker-build - build the docker image"
 	@echo "    docker-run 	- use docker-compose to run the service docker image"
 	@echo
