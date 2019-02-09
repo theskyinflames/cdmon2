@@ -44,6 +44,7 @@ func NewServer(hostingRepository HostingRepository, serverDomain ServerDomain, c
 }
 
 func (s *ServerService) CreateHosting(name string, cores int, memorymb int, diskmb int) (domain.UUID, error) {
+
 	hosting, err := domain.NewHosting(name, cores, memorymb, diskmb)
 	if err != nil {
 		return domain.UUID(""), err

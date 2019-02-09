@@ -13,6 +13,7 @@ const (
 	MinimalNumberOfCores  = "CDMON2_MINIMAL_NUMBER_OF_CORES"
 	MinimalSizeOfMemoryMb = "CDMON2_MINIMAL_SIZE_OF_MEMORY"
 	MininalSizeOfDiskMb   = "CDMON2_MININAML_SIZE_OF_DISK"
+	RedisAddr             = "CDMON2_REDIS_ADDR"
 )
 
 type (
@@ -24,6 +25,7 @@ type (
 		MinimalNumberOfCores  int
 		MinimalSizeOfMemoryMb int
 		MinimalSizeOfDiskMb   int
+		RedisAddr             string
 	}
 )
 
@@ -44,6 +46,9 @@ func (c *Config) Load() (err error) {
 	}
 	if err == nil {
 		c.MinimalSizeOfDiskMb, err = strconv.Atoi(getEnv(MininalSizeOfDiskMb))
+	}
+	if err == nil {
+		c.RedisAddr = getEnv(RedisAddr)
 	}
 	return
 }

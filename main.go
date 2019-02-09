@@ -3,6 +3,8 @@ package main
 import (
 	"os"
 
+	"github.com/theskyinflames/cdmon2/app/store"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 
@@ -37,7 +39,12 @@ func main() {
 	}
 
 	// Init the hostings repository
-	hostingsRepository := repository.NewHostingReposytoryMap(cfg)
+	store, err := store.NewStore(cfg, log)
+	if err != nil {
+		panic(err)
+	}
+	store.Flush() // Empty for each execution.
+	hostingsRepository := repository.NewHostingReposytoryMap(cfg, store)
 
 	// Init the hostings server service
 	service := service.NewServer(hostingsRepository, serverDomain, cfg, log)
