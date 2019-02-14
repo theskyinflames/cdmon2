@@ -118,7 +118,7 @@ To code this exercise, I've stablished these rules:
 
 ## Infrastructure
 * Go go1.11.5: As a programming language
-* Go mod: I've used modules as dependency management. 
+* Go mod: I've used modules as dependency management. **NOTE: go mod does not put all dependencies in vendor folder**
 * Make: GNU Make 4.2.1
 * Redis 5.0: I've used Redis as a storage. It's accessed for the repository layer only
 * Docker 18.06.1-ce: Used to build a docker image with the service
